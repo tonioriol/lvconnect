@@ -20,15 +20,16 @@
  *
  * @description: Allows user to store their or their patients' LibreView
  * data on their own Nightscout instance by facilitating transfer of
- * latest records from LibreView's server into NS.
+ * the latest records from LibreView's server into NS.
  */
 
 "use strict";
 
+require('dotenv').config();
+
 const Promise            = require("promise"),
       promiseRetry       = require("promise-retry"),
       request            = require("request"),
-      qs                 = require("querystring"),
       crypto             = require("crypto"),
       meta               = require("./package.json"),
       agent              = `${meta.name}/${meta.version}`,
@@ -76,7 +77,7 @@ function login( params ) {
 
     } else {
       return checkLvapi()
-      .then( lvapiVersion => {
+      .then( _lvapiVersion => {
         return request({
           method: "POST",
           uri: `https://${session.server}/auth/login`,
@@ -144,12 +145,12 @@ function login( params ) {
                       session.authToken        = body.data.authTicket.token;
                       session.tokenExpires     = +new Date() + body.data.authTicket.duration;
 
-                      console.debug( "loging successful:", session.user.id );
+                      console.debug( "login successful:", session.user.id );
                       resolve( "renewed" );
                     }
 
                   } else if( body.error ) { // login filed
-                    reject( `login: Check credentals. Error: ${body.error.message}` );
+                    reject( `login: Check credentials. Error: ${body.error.message}` );
 
                   } else { // no sensible data has been returned
                     reject( "login: Unknown response, check connection parameters." );
@@ -160,7 +161,7 @@ function login( params ) {
             }
 
           } else if( body.error ) { // login filed
-            reject( `login: Check credentals. Error: ${body.error.message}` );
+            reject( `login: Check credentials. Error: ${body.error.message}` );
 
           } else { // no sensible data has been returned
             reject( "login: Unknown response, check connection parameters." );
@@ -227,7 +228,7 @@ function authorize( params ) {
   return login( params )
   .then( status => {
     if( status === "renewed" ) {
-      if( session.user.id == params.login.patientId || session.user.accountType == "pat" ) {
+      if( session.user.id === params.login.patientId || session.user.accountType === "pat" ) {
         console.info( "patient is the user" );
         session.patient = session.user;
         return status;
@@ -507,7 +508,7 @@ function convertAll( lvData ) {
  */
 function uploadToNightscout( params, entries ) {
   return new Promise( ( resolve, reject ) => {
-    if( entries.length == 0 )
+    if( entries.length === 0 )
       return resolve( { uploadToNightscout: "zero entries fetched, nothing to upload" } );
 
     if (params && params.callback && params.callback.call) {
@@ -542,9 +543,9 @@ function uploadToNightscout( params, entries ) {
  * Reads environment variable if present, or returns its
  * default value
  * @param {string} varName - variable name
- * @param {varies} defaultValue - default value
+ * @param {string|null} defaultValue - default value
  */
-function readENV( varName, defaultValue ) {
+function readENV( varName, defaultValue = null ) {
   // for some reason Azure uses this prefix, maybe there is a good reason
   return process.env["CUSTOMCONNSTR_" + varName]
       || process.env["CUSTOMCONNSTR_" + varName.toLowerCase()]
@@ -567,7 +568,7 @@ function toLvapiHost( lvserver ) {
 }
 
 /**
- * Flattens arrays in Node.js before vesrion 11
+ * Flattens arrays in Node.js before version 11
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat
  * @param {array} arr - array to flatten
  * @param {number}  d - recursion depth
@@ -575,7 +576,7 @@ function toLvapiHost( lvserver ) {
 function flatDeep(arr, d = 1) {
    return d > 0 ? arr.reduce((acc, val) => acc.concat(Array.isArray(val) ? flatDeep(val, d - 1) : val), [])
                 : arr.slice();
-};
+}
 
 // function nullify_battery_status (params, then) {
 //   let shasum = crypto.createHash("sha1");
@@ -642,10 +643,10 @@ module.exports         = engine;
 if( !module.parent ) {
 
   if( readENV("API_SECRET").length < min_secret_length ) {
+    process.exit(1);
     throw new Error(
       `API_SECRET should be at least ${min_secret_length} characters long`
     );
-    process.exit(1);
   }
 
   let params = {
@@ -760,7 +761,7 @@ function saveSession() {
  * Restores session parameters from local file.
  */
 function restoreSession() {
-  return new Promise( ( resolve, reject ) => {
+  return new Promise( ( resolve, _reject ) => {
     return require("fs").readFile( "session.json", "utf8", (error, data) => {
       if( data ) {
         try {

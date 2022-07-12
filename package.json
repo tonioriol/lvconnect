@@ -20,11 +20,15 @@
   },
   "homepage": "https://github.com/skobkars/lvconnect#readme",
   "dependencies": {
+    "dotenv": "^16.0.1",
     "promise": "^8.1.0",
     "promise-retry": "^2.0.1",
     "request": "^2.88.2"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "login": "node index.js login",
+    "fetch": "node index.js fetch",
+    "run": "node index.js run"
   }
 }
